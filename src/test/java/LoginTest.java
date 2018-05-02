@@ -1,43 +1,51 @@
-import com.thoughtworks.selenium.DefaultSelenium;
-import com.thoughtworks.selenium.Selenium;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.openqa.selenium.server.RemoteControlConfiguration;
+import java.util.concurrent.TimeUnit;
+import org.junit.*;
 
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
 
 public class LoginTest {
-    private Selenium selenium;
+    private String baseUrl;
+    private Utils utils;
 
     @Before
     public void setUp() throws Exception {
-        RemoteControlConfiguration rcc = new RemoteControlConfiguration();
-        rcc.setTrustAllSSLCertificates(true);
-        selenium = new DefaultSelenium("localhost", 4444, "*chrome", "https://www.booking.com/");
-        selenium.start();
+        utils = new Utils();
+        System.setProperty("webdriver.gecko.driver", "src/test/resources/geckodriver");
+        System.setProperty("webdriver.chrome.driver", "src/test/resources/chromedriver");
+        baseUrl = "https://www.booking.com/ru";
     }
 
     @Test
     public void testLoginSuccess() throws Exception {
-        selenium.open("/index.ru.html?label=gen173bo-1DCAEoggJCAlhYSDNYA2iIAYgBAZgBMcIBA3gxMcgBD9gBA-gBAfgBApICAXmYAgKoAgM;sid=6427453015f9a2cd5efc604c63a34afb;sb_price_type=total&");
-        selenium.type("//input[@name='username']", "kanukova.s.a@gmail.com");
-        selenium.click("name=password");
-        selenium.type("name=password", "kekkekkek");
-        selenium.click("//input[@value='Войти']");
-        selenium.waitForPageToLoad("30000");
-        selenium.click("//li[@id='current_account']");
-        for (int second = 0;; second++) {
-            if (second >= 60) fail("timeout");
-            try { if (selenium.isVisible("//input[@value='Выйти']")) break; } catch (Exception e) {}
-            Thread.sleep(1000);
-        }
-        selenium.click("//input[@value='Выйти']");
-        selenium.waitForPageToLoad("30000");
+        //loginSuccess(new FirefoxDriver());
+        loginSuccess(new ChromeDriver());
     }
 
-    @After
-    public void tearDown() throws Exception {
-        selenium.stop();
+    @Test
+    public void testLoginFailure() throws Exception {
+        //loginFailure(new FirefoxDriver());
+        loginFailure(new ChromeDriver());
     }
-}
+
+    private void loginSuccess(WebDriver driver) throws Exception {
+        driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+        driver.get(baseUrl);
+        utils.login(driver, "kanukova.s.a@gmail.com", "kekkekkek");
+        sleep(6000);
+        utils.logout(driver);
+        driver.quit();
+    }
+
+    private void loginFailure(WebDriver driver) throws Exception {
+        driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+        driver.get(baseUrl);
+        utils.login(driver, "kanukova.s.a@gmail.com", "kekkek");
+        sleep(6000);
+        assertEquals(true, utils.isElementPresent(driver, By.cssSelector("div.alert.alert-error.alert-displayed")));
+        driver.quit();
+    }
+ }
